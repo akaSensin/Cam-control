@@ -1,0 +1,19 @@
+# Visual Studio / build artifacts
+.vs/
+tmp/
+*.vcxproj.user
+*.pdb
+*.obj
+*.ipdb
+*.iobj
+*.tlog
+
+# Rockstar game reference file (do not ship - Rockstar ToS)
+Cameras*.xml
+Docs/CAMERA-RESEARCH.md
+Language-Support-Kit*/
+
+# Runtime generated files
+*.log
+*.ini
+SKILL*.md
