@@ -8,6 +8,8 @@
 An open-source ScriptHookV `.asi` camera control mod for **Grand Theft Auto V (Single Player / Offline)**.
 Cam Control drives the game's **own** camera through public natives and verified camera metadata — nothing is replaced or hooked on the gameplay camera, so walking, aiming, cover, driving, camera collision, and mouse look all behave naturally.
 
+Unlike other camera mods that inject themselves into GTA V's pause-menu Settings (forcing you to open the pause menu, adjust blindly, and unpause to check), **Cam Control** opens as a clean live overlay right in front of you so you can tweak every slider and **see the camera change in real time**.
+
 ---
 
 ## Features

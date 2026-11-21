@@ -7,6 +7,11 @@
 An ASI plugin that adds an in-game menu for the third person and first person
 camera of the character and of the vehicle the character is driving.
 
+Unlike other mods that inject options into GTA V's pause-menu Settings
+(forcing you to pause, adjust blindly, and unpause to check), Cam Control
+opens right in front of you over the live game so you can see every camera
+change in real time.
+
 It drives the game's OWN camera. Nothing is created and nothing is replaced, so
 walking, aiming, cover, driving, camera collision and - most importantly - the
 mouse all behave exactly as they normally do. There is no custom camera layer
