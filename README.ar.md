@@ -26,6 +26,23 @@
 
 ---
 
+## اللغات المدعومة
+
+كل اللغات العشرة مدمجة جوا المود (`الإعدادات > اللغة`):
+
+- **English (الإنجليزية)**: This mod supports English.
+- **Türkçe (التركية)**: Bu mod Türkçe dilini destekler.
+- **Español (الإسبانية)**: Este mod está disponible en español.
+- **Русский (الروسية)**: Этот мод поддерживает русский язык.
+- **العربية المصرية (Egyptian Arabic)**: المود ده بيدعم اللغة العربية المصرية.
+- **中文 (الصينية)**: 此模组支持简体中文。
+- **日本語 (اليابانية)**: このMODは日本語に対応しています。
+- **Deutsch (الألمانية)**: Diese Mod unterstützt Deutsch.
+- **Português (البرتغالية)**: Este mod tem suporte para português.
+- **Bahasa Indonesia (الإندونيسية)**: Mod ini mendukung Bahasa Indonesia.
+
+---
+
 ## صور من جوا اللعبة
 
 | واجهة المود | الشخص التالت على الرجل |

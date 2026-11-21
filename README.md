@@ -24,6 +24,23 @@ Cam Control drives the game's **own** camera through public natives and verified
 
 ---
 
+## Supported Languages
+
+All 10 languages are built directly into the mod (`Settings > Language`):
+
+- **English**: This mod supports English.
+- **Türkçe (Turkish)**: Bu mod Türkçe dilini destekler.
+- **Español (Spanish)**: Este mod está disponible en español.
+- **Русский (Russian)**: Этот мод поддерживает русский язык.
+- **العربية المصرية (Egyptian Arabic)**: المود ده بيدعم اللغة العربية المصرية.
+- **中文 (Chinese)**: 此模组支持简体中文。
+- **日本語 (Japanese)**: このMODは日本語に対応しています。
+- **Deutsch (German)**: Diese Mod unterstützt Deutsch.
+- **Português (Portuguese)**: Este mod tem suporte para português.
+- **Bahasa Indonesia (Indonesian)**: Mod ini mendukung Bahasa Indonesia.
+
+---
+
 ## Screenshots
 
 | Mod UI | On-Foot Third Person |
