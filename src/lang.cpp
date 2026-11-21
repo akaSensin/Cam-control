@@ -747,6 +747,10 @@ namespace
 		  "Araç İçi Nişan FOV (Araba/Motor/Tekne/Heli)", "FOV en vehículo (Coche/Moto/Barco/Heli)", "FOV из транспорта (Авто/Мото/Лодка/Верт.)",
 		  "FOV التصويب من المركبات", "载具射击视野 (车/摩托/船/直升机)", "ドライブバイ視野角 (車/バイク/船/ヘリ)",
 		  "Drive-By-FOV (Auto/Bike/Boot/Heli)", "FOV em veículos (Carro/Moto/Barco/Heli)", "FOV Drive-By (Mobil/Motor/Perahu/Heli)" },
+		{ "Check For Updates On Launch",
+		  "Açılışta Güncelleme Kontrol Et", "Buscar actualizaciones al iniciar", "Проверять обновления при запуске",
+		  "فحص التحديثات عند التشغيل", "启动时检查更新", "起動時にアップデートを確認",
+		  "Beim Start nach Updates suchen", "Verificar atualizações ao iniciar", "Periksa Pembaruan Saat Mulai" },
 	};
 
 	const int kStringCount = (int)(sizeof(kStrings) / sizeof(kStrings[0]));

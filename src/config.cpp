@@ -164,6 +164,7 @@ namespace
 		else if (k == "metaaiming")         ParseBool(value, s.metaAiming);
 		else if (k == "autosave")           ParseBool(value, s.autoSave);
 		else if (k == "debugoverlay")       ParseBool(value, s.debugOverlay);
+		else if (k == "checkupdates")       ParseBool(value, s.checkUpdates);
 		else if (k == "language")           ParseInt(value, s.language);
 		else if (k == "themepreset")        ParseInt(value, s.themePreset);
 		else if (k == "themer")             ParseInt(value, s.themeR);
@@ -328,6 +329,7 @@ namespace Config
 		Append(out, "MetaAiming=%d\r\n",       s.metaAiming ? 1 : 0);
 		Append(out, "AutoSave=%d\r\n",         s.autoSave ? 1 : 0);
 		Append(out, "DebugOverlay=%d\r\n",     s.debugOverlay ? 1 : 0);
+		Append(out, "CheckUpdates=%d\r\n",     s.checkUpdates ? 1 : 0);
 		Append(out, "; Language: 0 English, 1 Turkish, 2 Spanish, 3 Russian, 4 Arabic,\r\n");
 		Append(out, ";           5 Chinese, 6 Japanese, 7 German, 8 Portuguese,\r\n");
 		Append(out, ";           9 Indonesian.\r\n");

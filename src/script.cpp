@@ -19,6 +19,7 @@
 #include "ui.h"
 #include "lang.h"
 #include "dxtext.h"
+#include "updater.h"
 
 #include "main.h"
 #include "natives.h"
@@ -559,6 +560,7 @@ namespace
 		m.AddPage(Lang::Tr("Settings"));
 		m.Toggle(PAGE_SETTINGS, Lang::Tr("Auto Save Config"), &g_settings.autoSave);
 		m.Toggle(PAGE_SETTINGS, Lang::Tr("Debug Overlay"), &g_settings.debugOverlay);
+		m.Toggle(PAGE_SETTINGS, Lang::Tr("Check For Updates On Launch"), &g_settings.checkUpdates);
 		m.Option(PAGE_SETTINGS, Lang::Tr("Language"), &g_settings.language, LanguageNames());
 		m.Label(PAGE_SETTINGS, Lang::Tr("Applies to the menu and the on-screen text."));
 
@@ -799,6 +801,9 @@ void ScriptMain()
 	if (g_settings.autoSave)
 		Config::Save(g_iniPath, g_settings);
 	g_wasEnabled = g_settings.enabled;
+
+	if (g_settings.checkUpdates)
+		Updater::CheckOnLaunch(MOD_VERSION);
 
 	// Language has to be selected before the menu is built: each row's text is
 	// resolved once, when its page is created.

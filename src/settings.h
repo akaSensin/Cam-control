@@ -76,6 +76,7 @@ struct Settings
 	// --- ui ---
 	bool autoSave = true;                 // save the ini whenever a value changes
 	bool debugOverlay = false;            // small info panel
+	bool checkUpdates = true;             // check GitHub Releases on launch
 	int  language = 0;                    // Lang::Id - see lang.h
 	int themePreset = THEME_MONOCHROME;   // accent colour preset
 	int themeR = 255;                     // custom accent, 0..255
