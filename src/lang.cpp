@@ -751,6 +751,14 @@ namespace
 		  "Açılışta Güncelleme Kontrol Et", "Buscar actualizaciones al iniciar", "Проверять обновления при запуске",
 		  "فحص التحديثات عند التشغيل", "启动时检查更新", "起動時にアップデートを確認",
 		  "Beim Start nach Updates suchen", "Verificar atualizações ao iniciar", "Periksa Pembaruan Saat Mulai" },
+		{ "Check For Updates Now",
+		  "Şimdi Güncelleme Kontrol Et", "Buscar actualizaciones ahora", "Проверить обновления сейчас",
+		  "فحص التحديثات الآن", "立即检查更新", "今すぐアップデートを確認",
+		  "Jetzt nach Updates suchen", "Verificar atualizações agora", "Periksa Pembaruan Sekarang" },
+		{ "Open Update Page",
+		  "Güncelleme Sayfasını Aç", "Abrir página de actualización", "Открыть страницу обновлений",
+		  "فتح صفحة التحديث", "打开更新页面", "更新ページを開く",
+		  "Update-Seite öffnen", "Abrir página de atualização", "Buka Halaman Pembaruan" },
 	};
 
 	const int kStringCount = (int)(sizeof(kStrings) / sizeof(kStrings[0]));

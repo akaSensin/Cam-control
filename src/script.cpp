@@ -569,6 +569,15 @@ namespace
 		m.Toggle(PAGE_SETTINGS, Lang::Tr("Auto Save Config"), &g_settings.autoSave);
 		m.Toggle(PAGE_SETTINGS, Lang::Tr("Debug Overlay"), &g_settings.debugOverlay);
 		m.Toggle(PAGE_SETTINGS, Lang::Tr("Check For Updates On Launch"), &g_settings.checkUpdates);
+		m.Action(PAGE_SETTINGS, Lang::Tr("Check For Updates Now"), []()
+		{
+			Notify("Checking for updates...");
+			Updater::StartAsyncCheck(MOD_VERSION);
+		});
+		m.Action(PAGE_SETTINGS, Lang::Tr("Open Update Page"), []()
+		{
+			Updater::OpenReleasePage();
+		});
 		m.Option(PAGE_SETTINGS, Lang::Tr("Language"), &g_settings.language, LanguageNames());
 		m.Label(PAGE_SETTINGS, Lang::Tr("Applies to the menu and the on-screen text."));
 
@@ -818,6 +827,7 @@ void ScriptMain()
 	Lang::Set((Lang::Id)g_settings.language);
 	g_wasLanguage = g_settings.language;
 
+	g_menu.SetVersion(MOD_VERSION);
 	BuildMenu();
 
 	// Let the game finish booting, then clear any script camera a previous
@@ -876,6 +886,10 @@ void ScriptMain()
 		if (devMsg)
 			Notify(devMsg);
 
+		const char *updMsg = Updater::TakeStatusMessage();
+		if (updMsg)
+			Notify(updMsg);
+
 		// Swapping language rebuilds the pages in the new one, and re-opens the
 		// page the player was on so the change does not look like a crash.
 		if (g_settings.language != g_wasLanguage)
@@ -886,7 +900,8 @@ void ScriptMain()
 
 			const bool wasOpen = g_menu.IsOpen();
 			g_menu.Clear();
-			BuildMenu();
+			g_menu.SetVersion(MOD_VERSION);
+	BuildMenu();
 			if (wasOpen)
 				g_menu.Open(PAGE_SETTINGS);
 		}

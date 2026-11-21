@@ -550,6 +550,8 @@ void MenuSystem::Draw(const Settings &settings)
 	// ---- header (accent bar, auto contrast text) -----------------------
 	Ui::FillRect(PANEL_X, PANEL_Y, PANEL_W, HEADER_H, th.accent);
 	Ui::TextLeft("CAM CONTROL", PANEL_X + 0.010f, PANEL_Y + 0.008f, 0.45f, th.onAccent, 1);
+	if (!m_version.empty())
+		Ui::TextRight(m_version, PANEL_X + PANEL_W - 0.010f, PANEL_Y + 0.012f, 0.24f, th.dimOnAccent, 0);
 	Ui::TextRight(Lang::Tr("made by sensin"), PANEL_X + PANEL_W - 0.010f, PANEL_Y + 0.036f, 0.23f, th.dimOnAccent, 0);
 	Ui::TextRight("akasensin on github", PANEL_X + PANEL_W - 0.010f, PANEL_Y + 0.056f, 0.21f, th.dimOnAccent, 0);
 

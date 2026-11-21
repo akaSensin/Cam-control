@@ -1,6 +1,6 @@
 /*
 	Cam Control - made by sensin
-	Pre-launch update check using WinHTTP (GitHub Releases API).
+	Update check using WinHTTP (GitHub Releases API).
 */
 
 #include "updater.h"
@@ -18,6 +18,14 @@
 
 namespace
 {
+	const wchar_t *kReleaseUrl = L"https://github.com/akaSensin/Cam-control/releases/latest";
+
+	volatile LONG g_checking = 0;
+	volatile LONG g_msgReady = 0;
+	volatile LONG g_updateAvailable = 0;
+	char g_msgBuf[160] = { 0 };
+	char g_asyncCurrentVer[32] = { 0 };
+
 	bool ParseVersion(const std::string &s, int &major, int &minor, int &patch)
 	{
 		major = minor = patch = 0;
@@ -122,24 +130,68 @@ namespace
 		WinHttpCloseHandle(hSession);
 		return status == 200 && !outBody.empty();
 	}
+
+	enum CheckResult { CHECK_FAILED, CHECK_UP_TO_DATE, CHECK_UPDATE_FOUND };
+
+	CheckResult RunCheck(const char *currentVersion, std::string &outTag)
+	{
+		outTag.clear();
+		std::string body;
+		if (!FetchLatestReleaseJson(body))
+			return CHECK_FAILED;
+
+		if (!ExtractJsonString(body, "tag_name", outTag))
+			return CHECK_FAILED;
+
+		if (IsNewerVersion(outTag, currentVersion))
+		{
+			InterlockedExchange(&g_updateAvailable, 1);
+			return CHECK_UPDATE_FOUND;
+		}
+		InterlockedExchange(&g_updateAvailable, 0);
+		return CHECK_UP_TO_DATE;
+	}
+
+	DWORD WINAPI AsyncCheckThread(LPVOID)
+	{
+		std::string tag;
+		const CheckResult res = RunCheck(g_asyncCurrentVer, tag);
+		if (res == CHECK_UPDATE_FOUND)
+		{
+			Log::Line("updater: new version %s available (current %s)", tag.c_str(), g_asyncCurrentVer);
+			_snprintf_s(g_msgBuf, sizeof(g_msgBuf), _TRUNCATE,
+				"Update %s available! Select 'Open Update Page' in Settings.", tag.c_str());
+		}
+		else if (res == CHECK_UP_TO_DATE)
+		{
+			Log::Line("updater: up to date (%s)", g_asyncCurrentVer);
+			_snprintf_s(g_msgBuf, sizeof(g_msgBuf), _TRUNCATE,
+				"Cam Control is up to date (%s).", g_asyncCurrentVer);
+		}
+		else
+		{
+			Log::Line("updater: check failed (offline or no releases)");
+			_snprintf_s(g_msgBuf, sizeof(g_msgBuf), _TRUNCATE,
+				"Update check failed (offline or no releases).");
+		}
+		InterlockedExchange(&g_msgReady, 1);
+		InterlockedExchange(&g_checking, 0);
+		return 0;
+	}
 }
 
 namespace Updater
 {
 	void CheckOnLaunch(const char *currentVersion)
 	{
-		std::string body;
-		if (!FetchLatestReleaseJson(body))
+		std::string tag;
+		const CheckResult res = RunCheck(currentVersion, tag);
+		if (res == CHECK_FAILED)
 		{
 			Log::Line("updater: no release info available (offline or no releases yet)");
 			return;
 		}
-
-		std::string tag;
-		if (!ExtractJsonString(body, "tag_name", tag))
-			return;
-
-		if (!IsNewerVersion(tag, currentVersion))
+		if (res == CHECK_UP_TO_DATE)
 		{
 			Log::Line("updater: up to date (%s)", currentVersion ? currentVersion : "");
 			return;
@@ -158,10 +210,37 @@ namespace Updater
 			MB_YESNO | MB_ICONINFORMATION | MB_TOPMOST | MB_SETFOREGROUND);
 
 		if (choice == IDYES)
-		{
-			ShellExecuteW(nullptr, L"open",
-				L"https://github.com/akaSensin/Cam-control/releases/latest",
-				nullptr, nullptr, SW_SHOWNORMAL);
-		}
+			OpenReleasePage();
+	}
+
+	void StartAsyncCheck(const char *currentVersion)
+	{
+		if (InterlockedCompareExchange(&g_checking, 1, 0) != 0)
+			return;
+
+		_snprintf_s(g_asyncCurrentVer, sizeof(g_asyncCurrentVer), _TRUNCATE, "%s",
+			currentVersion ? currentVersion : "");
+		HANDLE h = CreateThread(nullptr, 0, AsyncCheckThread, nullptr, 0, nullptr);
+		if (h)
+			CloseHandle(h);
+		else
+			InterlockedExchange(&g_checking, 0);
+	}
+
+	const char *TakeStatusMessage()
+	{
+		if (InterlockedCompareExchange(&g_msgReady, 0, 1) != 1)
+			return nullptr;
+		return g_msgBuf;
+	}
+
+	bool UpdateAvailable()
+	{
+		return InterlockedCompareExchange(&g_updateAvailable, 0, 0) != 0;
+	}
+
+	void OpenReleasePage()
+	{
+		ShellExecuteW(nullptr, L"open", kReleaseUrl, nullptr, nullptr, SW_SHOWNORMAL);
 	}
 }

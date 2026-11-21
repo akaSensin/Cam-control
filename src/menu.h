@@ -113,7 +113,12 @@ private:
 
 	// last keymap seen, used for the footer hints
 	KeyMap m_keys{ 0x26, 0x28, 0x25, 0x27, 0x0D, 0x08 };
+	std::string m_version;
 
+public:
+	void SetVersion(const std::string &v) { m_version = v; }
+
+private:
 	MenuPage *Current();
 	int VisibleRows() const;
 	void MoveSelection(int delta);
