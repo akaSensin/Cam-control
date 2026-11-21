@@ -726,6 +726,20 @@ namespace
 	// restored if previously touched), so a fresh install writes none of them.
 	void ApplyWeaponFovs(const Settings &s)
 	{
+		static bool hadAny = false;
+		bool anyActive = false;
+		for (int i = 0; i < (int)(sizeof(kWeaponCams) / sizeof(kWeaponCams[0])); i++)
+		{
+			if (s.*(kWeaponCams[i].fov) > 0.0f)
+			{
+				anyActive = true;
+				break;
+			}
+		}
+		if (!anyActive && !hadAny)
+			return;
+		hadAny = anyActive;
+
 		for (int i = 0; i < (int)(sizeof(kWeaponCams) / sizeof(kWeaponCams[0])); i++)
 		{
 			const WeaponCam &w = kWeaponCams[i];
@@ -939,46 +953,58 @@ namespace
 	void ApplyExtraCameras(const Settings &s)
 	{
 		// 1. Parachute cameras (camFollowParachuteCameraMetadata).
-		for (int i = 0; i < (int)(sizeof(kParachuteCams) / sizeof(kParachuteCams[0])); i++)
+		static bool hadParachute = false;
+		const bool wantParachute = (s.parachuteFov > 0.0f || s.parachuteDistance > 0.0f);
+		if (wantParachute || hadParachute)
 		{
-			const unsigned int h = kParachuteCams[i];
-			void *meta = FindMetadata(h);
-			if (!VerifyMeta(meta, h))
-				continue;
+			hadParachute = wantParachute;
+			for (int i = 0; i < (int)(sizeof(kParachuteCams) / sizeof(kParachuteCams[0])); i++)
+			{
+				const unsigned int h = kParachuteCams[i];
+				void *meta = FindMetadata(h);
+				if (!VerifyMeta(meta, h))
+					continue;
 
-			const uintptr_t m = (uintptr_t)meta;
-			g_currentMetaBase = (unsigned char *)meta;
-			if (s.parachuteFov > 0.0f)
-				WriteFloatChecked(m + LAYOUT.pedTpFov, s.parachuteFov, 1.0f, 180.0f, "parachute fov");
-			else
-				RestoreField(m + LAYOUT.pedTpFov);
+				const uintptr_t m = (uintptr_t)meta;
+				g_currentMetaBase = (unsigned char *)meta;
+				if (s.parachuteFov > 0.0f)
+					WriteFloatChecked(m + LAYOUT.pedTpFov, s.parachuteFov, 1.0f, 180.0f, "parachute fov");
+				else
+					RestoreField(m + LAYOUT.pedTpFov);
 
-			if (s.parachuteDistance > 0.0f)
-				WriteFloatChecked(m + LAYOUT.pedTpDistance, s.parachuteDistance, -10.0f, 50.0f, "parachute distance");
-			else
-				RestoreField(m + LAYOUT.pedTpDistance);
+				if (s.parachuteDistance > 0.0f)
+					WriteFloatChecked(m + LAYOUT.pedTpDistance, s.parachuteDistance, -10.0f, 50.0f, "parachute distance");
+				else
+					RestoreField(m + LAYOUT.pedTpDistance);
+			}
 		}
 
 		// 2. Drive-by / vehicle aiming cameras (36 camThirdPersonVehicleAimCameraMetadata).
-		for (int i = 0; i < (int)(sizeof(kVehicleAimCams) / sizeof(kVehicleAimCams[0])); i++)
+		static bool hadVehAim = false;
+		const bool wantVehAim = (s.vehAimFov > 0.0f);
+		if (wantVehAim || hadVehAim)
 		{
-			const unsigned int h = kVehicleAimCams[i];
-			void *meta = FindMetadata(h);
-			if (!VerifyMeta(meta, h))
-				continue;
+			hadVehAim = wantVehAim;
+			for (int i = 0; i < (int)(sizeof(kVehicleAimCams) / sizeof(kVehicleAimCams[0])); i++)
+			{
+				const unsigned int h = kVehicleAimCams[i];
+				void *meta = FindMetadata(h);
+				if (!VerifyMeta(meta, h))
+					continue;
 
-			const uintptr_t m = (uintptr_t)meta;
-			const int flagOff = ResolveWeaponFovFlagOffsetFor(meta, h);
-			g_currentMetaBase = (unsigned char *)meta;
-			if (s.vehAimFov > 0.0f)
-			{
-				WriteFloatChecked(m + OFF_FOV_TP_AIM, s.vehAimFov, 1.0f, 180.0f, "vehicle aim fov");
-				WriteBoolChecked(m + flagOff, false, "vehicle aim weapon fov flag");
-			}
-			else
-			{
-				RestoreField(m + OFF_FOV_TP_AIM);
-				RestoreField(m + flagOff);
+				const uintptr_t m = (uintptr_t)meta;
+				const int flagOff = ResolveWeaponFovFlagOffsetFor(meta, h);
+				g_currentMetaBase = (unsigned char *)meta;
+				if (s.vehAimFov > 0.0f)
+				{
+					WriteFloatChecked(m + OFF_FOV_TP_AIM, s.vehAimFov, 1.0f, 180.0f, "vehicle aim fov");
+					WriteBoolChecked(m + flagOff, false, "vehicle aim weapon fov flag");
+				}
+				else
+				{
+					RestoreField(m + OFF_FOV_TP_AIM);
+					RestoreField(m + flagOff);
+				}
 			}
 		}
 	}

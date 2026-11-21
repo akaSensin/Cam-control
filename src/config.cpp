@@ -304,6 +304,7 @@ namespace Config
 			parsed.pedViewMode = VIEWMODE_DONT_TOUCH;
 		if (parsed.vehViewMode < 0 || parsed.vehViewMode > 2)
 			parsed.vehViewMode = VIEWMODE_DONT_TOUCH;
+		parsed.pedFpReticle = ClampInt(parsed.pedFpReticle, 0, 2);
 		if (parsed.language < 0 || parsed.language >= Lang::COUNT)
 			parsed.language = 0;
 
