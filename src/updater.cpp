@@ -155,7 +155,7 @@ namespace Updater
 			tag.c_str(), currentVersion ? currentVersion : "unknown");
 
 		const int choice = MessageBoxW(nullptr, msg, L"Cam Control - Update Available",
-			MB_YESNO | MB_ICONINFORMATION | MB_TOPMOST);
+			MB_YESNO | MB_ICONINFORMATION | MB_TOPMOST | MB_SETFOREGROUND);
 
 		if (choice == IDYES)
 		{

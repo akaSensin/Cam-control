@@ -129,12 +129,20 @@ namespace
 			return false;
 		}
 		void *dst = GlobalLock(hMem);
-		if (dst)
+		if (!dst)
 		{
-			memcpy(dst, text.c_str(), text.size() + 1);
-			GlobalUnlock(hMem);
+			GlobalFree(hMem);
+			CloseClipboard();
+			return false;
 		}
-		SetClipboardData(CF_TEXT, hMem);
+		memcpy(dst, text.c_str(), text.size() + 1);
+		GlobalUnlock(hMem);
+		if (!SetClipboardData(CF_TEXT, hMem))
+		{
+			GlobalFree(hMem);
+			CloseClipboard();
+			return false;
+		}
 		CloseClipboard();
 		return true;
 	}

@@ -733,9 +733,8 @@ namespace
 			if (fov <= 0.0f)
 			{
 				// Restore per-weapon cameras returned to 0 (HASH_PED_AIM is owned by
-				// the main aiming plan while metaAiming is enabled, and
-				// HASH_PED_FIRST_AIM is shared with pedFpAimFov).
-				if (w.hash != HASH_PED_AIM && !(w.hash == HASH_PED_FIRST_AIM && s.pedFpAimFov > 0.0f))
+				// the main aiming plan while metaAiming is enabled).
+				if (w.hash != HASH_PED_AIM)
 				{
 					void *meta = FindMetadata(w.hash);
 					if (VerifyMeta(meta, w.hash))
