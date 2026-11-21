@@ -32,7 +32,7 @@
 
 #define MOD_NAME    "Cam Control"
 #define MOD_AUTHOR  "sensin"
-#define MOD_VERSION "v0.1"
+#define MOD_VERSION "v0.2"
 
 namespace
 {
