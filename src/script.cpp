@@ -32,7 +32,7 @@
 
 #define MOD_NAME    "Cam Control"
 #define MOD_AUTHOR  "sensin"
-#define MOD_VERSION "v0.3"
+#define MOD_VERSION "v0.4"
 
 namespace
 {
@@ -290,7 +290,6 @@ namespace
 		const Settings d;
 		g_settings.pedFpFov = d.pedFpFov;
 		g_settings.pedFpOffsetX = d.pedFpOffsetX;
-		g_settings.pedFpAimFov = d.pedFpAimFov;
 		g_settings.pedFpReticle = d.pedFpReticle;
 		g_settings.pedFpTiltUp = d.pedFpTiltUp;
 		g_settings.pedFpTiltDown = d.pedFpTiltDown;
@@ -498,7 +497,6 @@ namespace
 		m.AddPage(pedFpTitle);
 		m.Action(PAGE_PED_FP, Lang::Tr("Reset On-Foot First Person"), []() { ResetOnFootFirstPerson(); });
 		m.Slider(PAGE_PED_FP, Lang::Tr("Field Of View"), &g_settings.pedFpFov, 20.0f, 110.0f, 1.0f, " deg");
-		m.Slider(PAGE_PED_FP, Lang::Tr("Aiming Field Of View"), &g_settings.pedFpAimFov, 0.0f, 110.0f, 1.0f, " deg");
 		m.Slider(PAGE_PED_FP, Lang::Tr("View Offset X"), &g_settings.pedFpOffsetX, -0.5f, 0.5f, 0.010f, " m");
 		m.Slider(PAGE_PED_FP, Lang::Tr("Tilt Limit Up"), &g_settings.pedFpTiltUp, 0.0f, 89.0f, 1.0f, " deg");
 		m.Slider(PAGE_PED_FP, Lang::Tr("Tilt Limit Down"), &g_settings.pedFpTiltDown, 0.0f, 89.0f, 1.0f, " deg");
@@ -853,14 +851,22 @@ void ScriptMain()
 		}
 
 		// The theme preset option writes its RGB the moment it changes, and moving
-		// an RGB slider flips the preset over to Custom.
+		// an RGB slider flips the preset over to Custom. Moving the Default Pitch
+		// slider also turns on Override Default Pitch automatically so the player
+		// sees the change without having to toggle the override row first.
 		const int presetBefore = g_settings.themePreset;
 		const int rBefore = g_settings.themeR, gBefore = g_settings.themeG, bBefore = g_settings.themeB;
+		const float pitchBefore = g_settings.pedTpDefaultPitch;
+		const float aimFovBefore = g_settings.pedAimFov;
 		g_menu.Update(g_settings);
 		if (g_settings.themePreset != presetBefore)
 			ApplyThemePreset();
 		else if (g_settings.themeR != rBefore || g_settings.themeG != gBefore || g_settings.themeB != bBefore)
 			g_settings.themePreset = THEME_CUSTOM;
+		if (g_settings.pedTpDefaultPitch != pitchBefore)
+			g_settings.pedTpPitchOverride = true;
+		if (g_settings.pedAimFov != aimFovBefore && g_settings.pedAimFov > 0.0f && g_settings.weaponFovDefault > 0.0f)
+			g_settings.weaponFovDefault = 0.0f;
 
 		if (g_menu.ConsumeChanged())
 			MarkDirty();

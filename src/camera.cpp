@@ -60,6 +60,11 @@ namespace
 	// back to 0 stops only our own shake and never the game's.
 	bool g_shakeStarted = false;
 
+	// Tracking for on-foot third-person Default Pitch (resting pitch).
+	bool g_lastPitchOverride = false;
+	float g_lastDefaultPitch = 0.0f;
+	bool g_wasOnFootTpFree = false;
+
 	// FOV cross-check state (reset on Shutdown/ResetLook).
 	int g_mismatchFrames = 0;
 	bool g_mismatchReported = false;
@@ -157,6 +162,9 @@ namespace CameraControl
 		g_forceVeh = ViewForce();
 		g_forceReleased = false;
 		g_shakeStarted = false;
+		g_lastPitchOverride = false;
+		g_lastDefaultPitch = 0.0f;
+		g_wasOnFootTpFree = false;
 		g_mismatchFrames = 0;
 		g_mismatchReported = false;
 		CamMeta::Reset();
@@ -366,6 +374,35 @@ namespace CameraControl
 			if (tiltUp > 0.5f || tiltDown > 0.5f)
 				CAM::_CLAMP_GAMEPLAY_CAM_PITCH(tiltDown > 0.5f ? -tiltDown : -89.0f,
 				                               tiltUp > 0.5f ? tiltUp : 89.0f);
+
+			// ---- on-foot third-person default pitch --------------------------
+			// BaseOrbitPitchOffset in metadata is the resting pitch the follow
+			// camera auto-returns to when walking, so changing it while standing
+			// still does not move the current camera until the next recenter.
+			// Applying SET_GAMEPLAY_CAM_RELATIVE_PITCH when the setting is turned
+			// on, adjusted, or returned to from aiming/vehicle/first-person makes
+			// the camera tilt immediately in real time.
+			const bool onFootTpFree = (!inVeh && !firstPerson && !CAM::IS_AIM_CAM_ACTIVE());
+			if (onFootTpFree)
+			{
+				if (s.pedTpPitchOverride)
+				{
+					if (!g_lastPitchOverride || !g_wasOnFootTpFree ||
+						fabsf(s.pedTpDefaultPitch - g_lastDefaultPitch) > 0.001f)
+					{
+						CAM::SET_GAMEPLAY_CAM_RELATIVE_PITCH(s.pedTpDefaultPitch, 1.0f);
+						g_lastPitchOverride = true;
+						g_lastDefaultPitch = s.pedTpDefaultPitch;
+					}
+				}
+				else if (g_lastPitchOverride)
+				{
+					CAM::SET_GAMEPLAY_CAM_RELATIVE_PITCH(0.0f, 1.0f);
+					g_lastPitchOverride = false;
+					g_lastDefaultPitch = 0.0f;
+				}
+			}
+			g_wasOnFootTpFree = onFootTpFree;
 		}
 
 		// ---- fov / follow distance / pivot (camera metadata) -------------

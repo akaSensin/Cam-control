@@ -202,10 +202,6 @@ struct Settings
 	//   0 = do not touch, 1 = always show, 2 = never show
 	int pedFpReticle = 0;
 
-	// Field of view used while aiming in first person, which is a separate
-	// field from the normal one. 0 = leave the game's value alone.
-	float pedFpAimFov = 0.0f;
-
 	// --- camera shake -----------------------------------------------------
 	// The mod starts its own gameplay-camera shake and keeps it running at this
 	// strength. The game overwrites a shake amplitude set from a script before

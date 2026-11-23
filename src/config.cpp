@@ -203,7 +203,7 @@ namespace
 		else if (k == "pedaimpivotx")       ParseFloat(value, s.pedAimPivotX);
 		// First person extras.
 		else if (k == "pedfpreticle")       ParseInt(value, s.pedFpReticle);
-		else if (k == "pedfpaimfov")        ParseFloat(value, s.pedFpAimFov);
+		else if (k == "pedfpaimfov")        { /* removed: non-scoped FP ADS FOV is overridden per weapon by the game */ }
 		// Camera shake, percent of the game's own.
 		else if (k == "shakeonfoot")        ParseFloat(value, s.shakeOnFoot);
 		else if (k == "shakeinvehicle")     ParseFloat(value, s.shakeInVehicle);
@@ -388,8 +388,6 @@ namespace Config
 		out += "\r\n[OnFootFirstPerson]\r\n";
 		Append(out, "PedFpFov=%.6g\r\n",       s.pedFpFov);
 		Append(out, "PedFpOffsetX=%.6g\r\n",   s.pedFpOffsetX);
-		Append(out, "; Field of view while aiming in first person. 0 = leave alone.\r\n");
-		Append(out, "PedFpAimFov=%.6g\r\n",    s.pedFpAimFov);
 		Append(out, "; Unarmed reticle: 0 = do not touch, 1 = always show, 2 = never show.\r\n");
 		Append(out, "PedFpReticle=%d\r\n",     s.pedFpReticle);
 		Append(out, "PedFpTiltUp=%.6g\r\n",    s.pedFpTiltUp);
@@ -581,7 +579,7 @@ namespace Config
 			s.pedFpTiltUp, s.pedFpTiltDown,
 			s.vehTpTiltUp, s.vehTpTiltDown,
 			s.vehFpTiltUp, s.vehFpTiltDown,
-			s.pedFpFov, s.pedFpAimFov,
+			s.pedFpFov, 0.0f, // legacy pedFpAimFov slot kept for CC1/CC2 code layout compatibility
 			s.vehTpFov, s.vehTpDistance, s.vehTpPivotScale, s.vehTpZoom,
 			s.vehFpFov, s.vehFpOffsetZ,
 			s.shakeOnFoot, s.shakeInVehicle,
@@ -662,7 +660,7 @@ namespace Config
 		s.vehFpTiltUp        = ClampF(ReadFloatLE(p + 12 * 4), 0.0f,  89.0f,  def.vehFpTiltUp);
 		s.vehFpTiltDown      = ClampF(ReadFloatLE(p + 13 * 4), 0.0f,  89.0f,  def.vehFpTiltDown);
 		s.pedFpFov           = ClampF(ReadFloatLE(p + 14 * 4), 20.0f, 110.0f, def.pedFpFov);
-		s.pedFpAimFov        = ClampF(ReadFloatLE(p + 15 * 4), 0.0f,  110.0f, def.pedFpAimFov);
+		(void)ReadFloatLE(p + 15 * 4); // legacy pedFpAimFov slot (removed)
 		s.vehTpFov           = ClampF(ReadFloatLE(p + 16 * 4), 20.0f, 110.0f, def.vehTpFov);
 		s.vehTpDistance      = ClampF(ReadFloatLE(p + 17 * 4), 0.0f,  4.0f,   def.vehTpDistance);
 		s.vehTpPivotScale    = ClampF(ReadFloatLE(p + 18 * 4), 0.0f,  2.0f,   def.vehTpPivotScale);
