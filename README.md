@@ -14,10 +14,10 @@ Unlike other camera mods that inject themselves into GTA V's pause-menu Settings
 
 ## Features
 
-- **On-Foot Third Person**: Field of View (across walk, sprint, stealth, cover, and swim), Follow Distance, Pivot Offset, Tilt Limits (Up/Down), Keep FOV While Aiming, plus separate While Aiming FOV / Horizontal Origin / Follow Distance.
-- **On-Foot First Person**: Field of View, Tilt Limits (Up/Down), Unarmed Reticle (`Default` / `Always` / `Never`), Camera Shake.
-- **Vehicle Third Person**: Field of View, Follow Distance, Pivot Scale, Follow Zoom, Tilt Limits (Up/Down), Camera Shake.
-- **Vehicle First Person**: Field of View, View Offset Z, Tilt Limits (Up/Down), Keep First Person In Water, Keep First Person When Wrecked.
+- **On-Foot Third Person**: Field of View (across walk, sprint, stealth, cover, and swim), Follow Distance, Pivot Offset (left/right), Tilt Limits (Up/Down), Override Default Pitch / Default Pitch, Keep FOV While Aiming, plus separate While Aiming FOV / Horizontal Origin / Follow Distance.
+- **On-Foot First Person**: Field of View, Aiming Field Of View, View Offset X (left/right), Tilt Limits (Up/Down), Unarmed Reticle (`Default` / `Always` / `Never`), Camera Shake.
+- **Vehicle Third Person**: Field of View, Follow Distance, Pivot Offset (left/right), Pivot Scale, Follow Zoom, Tilt Limits (Up/Down), Camera Shake.
+- **Vehicle First Person**: Field of View, View Offset X (left/right), View Offset Z (up/down), Tilt Limits (Up/Down), Keep First Person In Water, Keep First Person When Wrecked.
 - **Weapons (Aiming FOV)**: Per-class aiming FOV for Default (pistols/SMG/rifles/MG), Hip Fire, RPG / Launchers, Shotgun, Thrown, Melee / Animals, Digiscanner, Jerry Can, Sniper, Sniper (Low Zoom), and Other Scopes / Aim (including Run-and-Gun and Cinematic Shooting cameras).
 - **Extra Cameras**: Parachute Field of View & Follow Distance, plus Drive-By / Vehicle Weapon Aiming FOV (cars, bikes, boats, helicopters).
 - **Share Preset Code (No File Needed)**: Export your settings as a compact `CC2:...` clipboard code and import codes shared by other players (`CC1:` / `CC2:`) without overwriting your keybinds or language.
