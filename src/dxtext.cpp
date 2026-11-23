@@ -85,6 +85,7 @@ namespace
 	};
 
 	std::mutex g_queueMutex;
+	std::mutex g_renderMutex;
 	std::vector<Queued> g_next;     // filled by the script thread
 	std::vector<Queued> g_current;  // drained by the render thread
 
@@ -201,6 +202,8 @@ namespace
 		g_device->GetImmediateContext(&g_context);
 		if (!g_context)
 		{
+			g_device->Release();
+			g_device = nullptr;
 			Fail("GetImmediateContext", E_FAIL);
 			return false;
 		}
@@ -719,8 +722,10 @@ namespace DxText
 	{
 		if (!g_registered)
 			return;
-		g_registered = false;
 		presentCallbackUnregister(OnPresent);
+
+		std::lock_guard<std::mutex> renderLock(g_renderMutex);
+		g_registered = false;
 		ReleaseCache();
 		if (g_raster) { g_raster->Release(); g_raster = nullptr; }
 		if (g_blend) { g_blend->Release(); g_blend = nullptr; }
@@ -764,7 +769,8 @@ namespace DxText
 
 	void OnPresent(void *swapChain)
 	{
-		if (g_failed || !swapChain)
+		std::lock_guard<std::mutex> renderLock(g_renderMutex);
+		if (!g_registered || g_failed || !swapChain)
 			return;
 
 		// Take a new frame from the script thread, but keep drawing the last one

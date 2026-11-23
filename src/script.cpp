@@ -155,10 +155,18 @@ namespace
 		HANDLE hData = GetClipboardData(CF_TEXT);
 		if (hData)
 		{
+			const SIZE_T maxBytes = GlobalSize(hData);
 			const char *src = (const char *)GlobalLock(hData);
-			if (src)
+			if (src && maxBytes > 0)
 			{
-				out = src;
+				size_t len = 0;
+				while (len < maxBytes && src[len] != '\0')
+					len++;
+				out.assign(src, len);
+				GlobalUnlock(hData);
+			}
+			else if (src)
+			{
 				GlobalUnlock(hData);
 			}
 		}

@@ -12,6 +12,16 @@ Unlike other camera mods that inject themselves into GTA V's pause-menu Settings
 
 ---
 
+## What's New in v0.4
+
+- **Fixed On-Foot Default Pitch**: Resolved custom view-mode pitch arrays and `PullAroundSettings` on `camFollowPedCameraMetadata`, enabled pitch pull-around when `Override Default Pitch` is active, and applied relative pitch immediately in real time (plus on transitions back to free third person).
+- **Fixed Third-Person Aiming FOV**: Anchored `ShouldApplyWeaponFov` resolution across all 87 third-person ped aiming cameras (`PedAim`, cover, melee, assisted aim / run & gun), auto-enables `Override Default Pitch` when adjusting the pitch slider, and prevents stale `WeaponFovDefault` settings from blocking `Aiming Field Of View`.
+- **Fixed Camera Shake After Reset**: Reset actions now immediately stop any active mod-started camera shake instead of leaving `HAND_SHAKE` active after resetting sliders.
+- **Removed Non-Functional First-Person Aiming FOV**: Non-scoped first-person ADS FOV is overridden per weapon/component by the game engine; scoped sniper/aim cameras remain tunable on the **Weapons** page.
+- **Memory & Thread-Safety Hardening**: Added bounds and readability validation across all live metadata pool, hash-list, active-vehicle, and dump readers, bounded clipboard reads, and synchronized D3D11 overlay teardown with the render callback.
+
+---
+
 ## Features
 
 - **On-Foot Third Person**: Field of View (across walk, sprint, stealth, cover, and swim), Follow Distance, Pivot Offset (left/right), Tilt Limits (Up/Down), Override Default Pitch / Default Pitch, Keep FOV While Aiming, plus separate While Aiming FOV / Horizontal Origin / Follow Distance.

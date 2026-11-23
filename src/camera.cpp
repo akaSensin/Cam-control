@@ -155,13 +155,18 @@ namespace CameraControl
 
 	void ResetLook()
 	{
+		if (g_shakeStarted)
+		{
+			CAM::STOP_GAMEPLAY_CAM_SHAKING(TRUE);
+			g_shakeStarted = false;
+		}
+
 		g_lastPedView = -1;
 		g_lastVehView = -1;
 		g_wantVehView = -1;
 		g_forcePed = ViewForce();
 		g_forceVeh = ViewForce();
 		g_forceReleased = false;
-		g_shakeStarted = false;
 		g_lastPitchOverride = false;
 		g_lastDefaultPitch = 0.0f;
 		g_wasOnFootTpFree = false;

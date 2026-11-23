@@ -341,6 +341,14 @@ namespace
 		return (uintptr_t)(instr + instrLen + rel);
 	}
 
+	bool IsValidUserPtr(const void *p, size_t bytes)
+	{
+		const uintptr_t addr = (uintptr_t)p;
+		if (addr < 0x10000 || addr > 0x00007FFFFFFFFFFFull)
+			return false;
+		return IsBadReadPtr(p, bytes) == FALSE;
+	}
+
 	// Walks the game's camera metadata pool looking for one hash.
 	void *FindMetadata(unsigned int hash)
 	{
@@ -353,10 +361,13 @@ namespace
 
 		// rage::pgCollection<camMetadataRef*>: { T* data; u16 count; u16 size; }
 		unsigned char *pool = (unsigned char *)g_metadataPool;
+		if (!IsValidUserPtr(pool, 12))
+			return nullptr;
+
 		void **data = *(void ***)pool;
 		const unsigned short count = *(unsigned short *)(pool + 8);
 
-		if (!data || count == 0 || count > 4096)
+		if (!data || count == 0 || count > 4096 || !IsValidUserPtr(data, (size_t)count * sizeof(void *)))
 			return nullptr;
 
 		for (unsigned short i = 0; i < count; i++)
@@ -373,8 +384,11 @@ namespace
 			// by the object hash alone.
 			while (ref && guard++ < 4096)
 			{
+				if (!IsValidUserPtr(ref, 0x18))
+					break;
+
 				void *pData = *(void **)(ref + 0x8);
-				if (pData)
+				if (pData && IsValidUserPtr((const unsigned char *)pData + 0x8, sizeof(unsigned int)))
 				{
 					const unsigned int key = *(unsigned int *)((unsigned char *)pData + 0x8);
 					if (key == hash)
@@ -400,7 +414,7 @@ namespace
 	// object - see FindMetadata.
 	bool VerifyMeta(void *meta, unsigned int hash)
 	{
-		if (!meta)
+		if (!meta || !IsValidUserPtr((const unsigned char *)meta + 0x8, sizeof(unsigned int)))
 			return false;
 		if (g_lastMatchByRef)
 			return true;
@@ -577,7 +591,7 @@ namespace
 			return 0;
 
 		unsigned char *handle = getScriptHandleBaseAddress(veh);
-		if (!handle || IsBadReadPtr(handle + 0x20, sizeof(uintptr_t)))
+		if (!handle || !IsValidUserPtr(handle + 0x20, sizeof(uintptr_t)))
 			return 0;
 
 		const uintptr_t modelInfo = *(uintptr_t *)(handle + 0x20);
@@ -585,7 +599,7 @@ namespace
 			return 0;
 
 		const int offset = firstPerson ? LAYOUT.modelFirstHash : LAYOUT.modelThirdHash;
-		if (IsBadReadPtr((void *)(modelInfo + offset), sizeof(unsigned int)))
+		if (!IsValidUserPtr((void *)(modelInfo + offset), sizeof(unsigned int)))
 			return 0;
 
 		const unsigned int hash = *(unsigned int *)(modelInfo + offset);
@@ -609,13 +623,16 @@ namespace
 		}
 
 		unsigned char *pool = (unsigned char *)g_metadataPool;
+		if (!IsValidUserPtr(pool, 12))
+			return;
+
 		void **data = *(void ***)pool;
 		const unsigned short count = *(unsigned short *)(pool + 8);
 
 		Log::Line("meta: pool %p holds %u ref(s) - listing every hash present",
 			g_metadataPool, (unsigned)count);
 
-		if (!data || count == 0 || count > 4096)
+		if (!data || count == 0 || count > 4096 || !IsValidUserPtr(data, (size_t)count * sizeof(void *)))
 		{
 			Log::Line("meta: pool contents look wrong (data %p, count %u)", data, (unsigned)count);
 			return;
@@ -626,10 +643,10 @@ namespace
 			unsigned char *ref = (unsigned char *)data[i];
 			int guard = 0;
 
-			while (ref && guard++ < 64)
+			while (ref && guard++ < 64 && IsValidUserPtr(ref, 0x18))
 			{
 				void *pData = *(void **)(ref + 0x8);
-				if (pData)
+				if (pData && IsValidUserPtr((const unsigned char *)pData + 0x8, sizeof(unsigned int)))
 				{
 					const unsigned int key = *(unsigned int *)((unsigned char *)pData + 0x8);
 					const unsigned int refKey = *(unsigned int *)ref;
@@ -1220,14 +1237,14 @@ namespace
 			}
 
 			// 2. Scan any 5-element CustomViewModeSettings atArray pointer target (supports 16-byte or 24-byte vtable stride).
-			for (int o = 0x2B0; o <= 0x680; o += 4)
+			for (int o = 0x2B0; o <= 0x670; o += 4)
 			{
 				if (IsBadReadPtr((void *)(m + o), 16))
 					break;
 				const uintptr_t dataPtr = *(const uintptr_t *)(m + o);
 				const unsigned short count = *(const unsigned short *)(m + o + 8);
 				const unsigned short size = *(const unsigned short *)(m + o + 10);
-				if (dataPtr < 0x10000 || count != 5 || size < 5 || size > 16 || IsBadReadPtr((void *)dataPtr, 5 * 24))
+				if (count != 5 || size < 5 || size > 16 || !IsValidUserPtr((const void *)dataPtr, 5 * 24))
 					continue;
 
 				for (int ao = 0; ao <= 5 * 24 - 16; ao += 4)
@@ -1361,10 +1378,16 @@ namespace CamMeta
 		}
 
 		unsigned char *pool = (unsigned char *)g_metadataPool;
+		if (!IsValidUserPtr(pool, 12))
+		{
+			Log::Line("list: the pool pointer looks invalid");
+			return;
+		}
+
 		void **data = *(void ***)pool;
 		const unsigned short count = *(unsigned short *)(pool + 8);
 
-		if (!data || count == 0 || count > 4096)
+		if (!data || count == 0 || count > 4096 || !IsValidUserPtr(data, (size_t)count * sizeof(void *)))
 		{
 			Log::Line("list: the pool looks wrong (data %p, count %u)", data, (unsigned)count);
 			return;
@@ -1379,10 +1402,10 @@ namespace CamMeta
 			unsigned char *ref = (unsigned char *)data[i];
 			int guard = 0;
 
-			while (ref && guard++ < 64)
+			while (ref && guard++ < 64 && IsValidUserPtr(ref, 0x18))
 			{
 				unsigned char *pData = *(unsigned char **)(ref + 0x8);
-				if (pData)
+				if (pData && IsValidUserPtr(pData, 0x34))
 				{
 					const unsigned int key = *(unsigned int *)(pData + 0x8);
 					const float f24 = AsFloat(*(unsigned int *)(pData + 0x24));
@@ -1489,15 +1512,18 @@ namespace CamMeta
 		const unsigned char *m = (const unsigned char *)meta;
 
 		// 0x0 .. 0x600. The fields we know of top out inside this range, and
-		// reading past the allocation would buy nothing.
-		const int kBytes = 0x600;
+		// reading past the allocation would buy nothing. Measure readable length first
+		// so smaller camera metadata objects do not read past their page.
+		int readableBytes = 0;
+		while (readableBytes < 0x600 && IsValidUserPtr(m + readableBytes, 0x10))
+			readableBytes += 0x10;
 
 		Log::Line("dump: ==== camera metadata 0x%X  %s, %s ====", hash,
 			inVeh ? "vehicle" : "on foot", firstPerson ? "first person" : "third person");
 
 		// ---- full dump ---------------------------------------------------
 		Log::Line("dump: offset  raw       float         | offset  raw       float");
-		for (int off = 0; off < kBytes; off += 0x10)
+		for (int off = 0; off < readableBytes; off += 0x10)
 		{
 			char line[320];
 			int n = 0;
@@ -1526,7 +1552,7 @@ namespace CamMeta
 			Log::Line("dump: ---- changes since the previous dump of this camera ----");
 
 			int changed = 0;
-			for (int off = 0; off < kBytes; off += 4)
+			for (int off = 0; off < readableBytes; off += 4)
 			{
 				const unsigned int raw = *(const unsigned int *)(m + off);
 
@@ -1550,7 +1576,7 @@ namespace CamMeta
 
 		// ---- this dump becomes the baseline for the next one --------------
 		g_base.clear();
-		for (int off = 0; off < kBytes; off += 4)
+		for (int off = 0; off < readableBytes; off += 4)
 			g_base[off] = *(const unsigned int *)(m + off);
 		g_baseHash = hash;
 
