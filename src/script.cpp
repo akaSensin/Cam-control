@@ -32,7 +32,7 @@
 
 #define MOD_NAME    "Cam Control"
 #define MOD_AUTHOR  "sensin"
-#define MOD_VERSION "v0.2"
+#define MOD_VERSION "v0.3"
 
 namespace
 {
@@ -277,6 +277,8 @@ namespace
 		g_settings.pedAimPivotX = d.pedAimPivotX;
 		g_settings.pedTpTiltUp = d.pedTpTiltUp;
 		g_settings.pedTpTiltDown = d.pedTpTiltDown;
+		g_settings.pedTpPitchOverride = d.pedTpPitchOverride;
+		g_settings.pedTpDefaultPitch = d.pedTpDefaultPitch;
 		g_settings.metaAiming = d.metaAiming;
 		CameraControl::ResetLook();
 		MarkDirty();
@@ -287,6 +289,7 @@ namespace
 	{
 		const Settings d;
 		g_settings.pedFpFov = d.pedFpFov;
+		g_settings.pedFpOffsetX = d.pedFpOffsetX;
 		g_settings.pedFpAimFov = d.pedFpAimFov;
 		g_settings.pedFpReticle = d.pedFpReticle;
 		g_settings.pedFpTiltUp = d.pedFpTiltUp;
@@ -302,6 +305,7 @@ namespace
 		const Settings d;
 		g_settings.vehTpFov = d.vehTpFov;
 		g_settings.vehTpDistance = d.vehTpDistance;
+		g_settings.vehTpPivotX = d.vehTpPivotX;
 		g_settings.vehTpPivotScale = d.vehTpPivotScale;
 		g_settings.vehTpZoom = d.vehTpZoom;
 		g_settings.vehTpTiltUp = d.vehTpTiltUp;
@@ -316,6 +320,7 @@ namespace
 	{
 		const Settings d;
 		g_settings.vehFpFov = d.vehFpFov;
+		g_settings.vehFpOffsetX = d.vehFpOffsetX;
 		g_settings.vehFpOffsetZ = d.vehFpOffsetZ;
 		g_settings.vehFpTiltUp = d.vehFpTiltUp;
 		g_settings.vehFpTiltDown = d.vehFpTiltDown;
@@ -478,6 +483,8 @@ namespace
 		m.Slider(PAGE_PED_TP, Lang::Tr("Pivot Offset"), &g_settings.pedTpPivotX, -1.0f, 1.0f, 0.010f, "");
 		m.Slider(PAGE_PED_TP, Lang::Tr("Tilt Limit Up"), &g_settings.pedTpTiltUp, 0.0f, 89.0f, 1.0f, " deg");
 		m.Slider(PAGE_PED_TP, Lang::Tr("Tilt Limit Down"), &g_settings.pedTpTiltDown, 0.0f, 89.0f, 1.0f, " deg");
+		m.Toggle(PAGE_PED_TP, Lang::Tr("Override Default Pitch"), &g_settings.pedTpPitchOverride);
+		m.Slider(PAGE_PED_TP, Lang::Tr("Default Pitch"), &g_settings.pedTpDefaultPitch, -45.0f, 45.0f, 1.0f, " deg");
 		m.Toggle(PAGE_PED_TP, Lang::Tr("Keep FOV While Aiming"), &g_settings.metaAiming);
 		m.Label(PAGE_PED_TP, Lang::Tr("On = same FOV down the sights. Off = aim stays vanilla."));
 		m.Separator(PAGE_PED_TP);
@@ -491,6 +498,8 @@ namespace
 		m.AddPage(pedFpTitle);
 		m.Action(PAGE_PED_FP, Lang::Tr("Reset On-Foot First Person"), []() { ResetOnFootFirstPerson(); });
 		m.Slider(PAGE_PED_FP, Lang::Tr("Field Of View"), &g_settings.pedFpFov, 20.0f, 110.0f, 1.0f, " deg");
+		m.Slider(PAGE_PED_FP, Lang::Tr("Aiming Field Of View"), &g_settings.pedFpAimFov, 0.0f, 110.0f, 1.0f, " deg");
+		m.Slider(PAGE_PED_FP, Lang::Tr("View Offset X"), &g_settings.pedFpOffsetX, -0.5f, 0.5f, 0.010f, " m");
 		m.Slider(PAGE_PED_FP, Lang::Tr("Tilt Limit Up"), &g_settings.pedFpTiltUp, 0.0f, 89.0f, 1.0f, " deg");
 		m.Slider(PAGE_PED_FP, Lang::Tr("Tilt Limit Down"), &g_settings.pedFpTiltDown, 0.0f, 89.0f, 1.0f, " deg");
 		m.Separator(PAGE_PED_FP);
@@ -504,6 +513,7 @@ namespace
 		m.Action(PAGE_VEH_TP, Lang::Tr("Reset Vehicle Third Person"), []() { ResetVehicleThirdPerson(); });
 		m.Slider(PAGE_VEH_TP, Lang::Tr("Field Of View"), &g_settings.vehTpFov, 20.0f, 110.0f, 1.0f, " deg");
 		m.Slider(PAGE_VEH_TP, Lang::Tr("Follow Distance"), &g_settings.vehTpDistance, 0.0f, 4.0f, 0.025f, "");
+		m.Slider(PAGE_VEH_TP, Lang::Tr("Pivot Offset"), &g_settings.vehTpPivotX, -2.0f, 2.0f, 0.025f, "");
 		m.Slider(PAGE_VEH_TP, Lang::Tr("Pivot Scale"), &g_settings.vehTpPivotScale, 0.0f, 2.0f, 0.05f, "");
 		m.Slider(PAGE_VEH_TP, Lang::Tr("Follow Zoom"), &g_settings.vehTpZoom, 0.0f, 3.0f, 1.0f, "");
 		m.Slider(PAGE_VEH_TP, Lang::Tr("Tilt Limit Up"), &g_settings.vehTpTiltUp, 0.0f, 89.0f, 1.0f, " deg");
@@ -514,6 +524,7 @@ namespace
 		m.AddPage(vehFpTitle);
 		m.Action(PAGE_VEH_FP, Lang::Tr("Reset Vehicle First Person"), []() { ResetVehicleFirstPerson(); });
 		m.Slider(PAGE_VEH_FP, Lang::Tr("Field Of View"), &g_settings.vehFpFov, 20.0f, 110.0f, 1.0f, " deg");
+		m.Slider(PAGE_VEH_FP, Lang::Tr("View Offset X"), &g_settings.vehFpOffsetX, -0.5f, 0.5f, 0.010f, " m");
 		m.Slider(PAGE_VEH_FP, Lang::Tr("View Offset Z"), &g_settings.vehFpOffsetZ, -0.5f, 0.5f, 0.010f, " m");
 		m.Slider(PAGE_VEH_FP, Lang::Tr("Tilt Limit Up"), &g_settings.vehFpTiltUp, 0.0f, 89.0f, 1.0f, " deg");
 		m.Slider(PAGE_VEH_FP, Lang::Tr("Tilt Limit Down"), &g_settings.vehFpTiltDown, 0.0f, 89.0f, 1.0f, " deg");
@@ -568,16 +579,6 @@ namespace
 		m.AddPage(Lang::Tr("Settings"));
 		m.Toggle(PAGE_SETTINGS, Lang::Tr("Auto Save Config"), &g_settings.autoSave);
 		m.Toggle(PAGE_SETTINGS, Lang::Tr("Debug Overlay"), &g_settings.debugOverlay);
-		m.Toggle(PAGE_SETTINGS, Lang::Tr("Check For Updates On Launch"), &g_settings.checkUpdates);
-		m.Action(PAGE_SETTINGS, Lang::Tr("Check For Updates Now"), []()
-		{
-			Notify("Checking for updates...");
-			Updater::StartAsyncCheck(MOD_VERSION);
-		});
-		m.Action(PAGE_SETTINGS, Lang::Tr("Open Update Page"), []()
-		{
-			Updater::OpenReleasePage();
-		});
 		m.Option(PAGE_SETTINGS, Lang::Tr("Language"), &g_settings.language, LanguageNames());
 		m.Label(PAGE_SETTINGS, Lang::Tr("Applies to the menu and the on-screen text."));
 
@@ -684,6 +685,9 @@ namespace
 		m.Label(PAGE_ABOUT, aboutVersion.c_str());
 		m.Label(PAGE_ABOUT, Lang::Tr("made by sensin"));
 		m.Label(PAGE_ABOUT, "akasensin on github");
+		m.Separator(PAGE_ABOUT);
+		m.Action(PAGE_ABOUT, Lang::Tr("Mod Author"), []() { Updater::OpenAuthorPage(); });
+		m.Action(PAGE_ABOUT, Lang::Tr("Mod Page"), []() { Updater::OpenReleasePage(); });
 
 		// ---------------- weapons ---------------------------------------
 		// Added last so the pages above keep their numbers. The game picks a
@@ -819,9 +823,6 @@ void ScriptMain()
 		Config::Save(g_iniPath, g_settings);
 	g_wasEnabled = g_settings.enabled;
 
-	if (g_settings.checkUpdates)
-		Updater::CheckOnLaunch(MOD_VERSION);
-
 	// Language has to be selected before the menu is built: each row's text is
 	// resolved once, when its page is created.
 	Lang::Set((Lang::Id)g_settings.language);
@@ -885,10 +886,6 @@ void ScriptMain()
 		const char *devMsg = CamMeta::TakeMessage();
 		if (devMsg)
 			Notify(devMsg);
-
-		const char *updMsg = Updater::TakeStatusMessage();
-		if (updMsg)
-			Notify(updMsg);
 
 		// Swapping language rebuilds the pages in the new one, and re-opens the
 		// page the player was on so the change does not look like a crash.

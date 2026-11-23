@@ -164,7 +164,6 @@ namespace
 		else if (k == "metaaiming")         ParseBool(value, s.metaAiming);
 		else if (k == "autosave")           ParseBool(value, s.autoSave);
 		else if (k == "debugoverlay")       ParseBool(value, s.debugOverlay);
-		else if (k == "checkupdates")       ParseBool(value, s.checkUpdates);
 		else if (k == "language")           ParseInt(value, s.language);
 		else if (k == "themepreset")        ParseInt(value, s.themePreset);
 		else if (k == "themer")             ParseInt(value, s.themeR);
@@ -173,15 +172,20 @@ namespace
 		else if (k == "pedtpfov")           ParseFloat(value, s.pedTpFov);
 		else if (k == "pedtpdistance")      ParseFloat(value, s.pedTpDistance);
 		else if (k == "pedtppivotx")        ParseFloat(value, s.pedTpPivotX);
+		else if (k == "pedtppitchoverride") ParseBool(value, s.pedTpPitchOverride);
+		else if (k == "pedtpdefaultpitch")  ParseFloat(value, s.pedTpDefaultPitch);
 		else if (k == "pedtppitchlimit")    { ParseFloat(value, s.pedTpTiltUp); s.pedTpTiltDown = s.pedTpTiltUp; }
 		else if (k == "pedfpfov")           ParseFloat(value, s.pedFpFov);
+		else if (k == "pedfpoffsetx")       ParseFloat(value, s.pedFpOffsetX);
 		else if (k == "pedfppitchlimit")    { ParseFloat(value, s.pedFpTiltUp); s.pedFpTiltDown = s.pedFpTiltUp; }
 		else if (k == "vehtpfov")           ParseFloat(value, s.vehTpFov);
 		else if (k == "vehtpdistance")      ParseFloat(value, s.vehTpDistance);
+		else if (k == "vehtppivotx")        ParseFloat(value, s.vehTpPivotX);
 		else if (k == "vehtppivotscale")    ParseFloat(value, s.vehTpPivotScale);
 		else if (k == "vehtpzoom")          ParseFloat(value, s.vehTpZoom);
 		else if (k == "vehtppitchlimit")    { ParseFloat(value, s.vehTpTiltUp); s.vehTpTiltDown = s.vehTpTiltUp; }
 		else if (k == "vehfpfov")           ParseFloat(value, s.vehFpFov);
+		else if (k == "vehfpoffsetx")       ParseFloat(value, s.vehFpOffsetX);
 		else if (k == "vehfpoffsetz")       ParseFloat(value, s.vehFpOffsetZ);
 		else if (k == "vehfppitchlimit")    { ParseFloat(value, s.vehFpTiltUp); s.vehFpTiltDown = s.vehFpTiltUp; }
 		// Split tilt limits, one value per direction.
@@ -330,7 +334,6 @@ namespace Config
 		Append(out, "MetaAiming=%d\r\n",       s.metaAiming ? 1 : 0);
 		Append(out, "AutoSave=%d\r\n",         s.autoSave ? 1 : 0);
 		Append(out, "DebugOverlay=%d\r\n",     s.debugOverlay ? 1 : 0);
-		Append(out, "CheckUpdates=%d\r\n",     s.checkUpdates ? 1 : 0);
 		Append(out, "; Language: 0 English, 1 Turkish, 2 Spanish, 3 Russian, 4 Arabic,\r\n");
 		Append(out, ";           5 Chinese, 6 Japanese, 7 German, 8 Portuguese,\r\n");
 		Append(out, ";           9 Indonesian.\r\n");
@@ -366,6 +369,8 @@ namespace Config
 		Append(out, "PedTpFov=%.6g\r\n",       s.pedTpFov);
 		Append(out, "PedTpDistance=%.6g\r\n",  s.pedTpDistance);
 		Append(out, "PedTpPivotX=%.6g\r\n",    s.pedTpPivotX);
+		Append(out, "PedTpPitchOverride=%d\r\n", s.pedTpPitchOverride ? 1 : 0);
+		Append(out, "PedTpDefaultPitch=%.6g\r\n", s.pedTpDefaultPitch);
 		Append(out, "; The aiming camera the game switches to down the sights.\r\n");
 		Append(out, "; 0 = same as third person, which is what the mod did before these\r\n");
 		Append(out, "; existed, so leaving them at 0 keeps the old behaviour exactly.\r\n");
@@ -382,6 +387,7 @@ namespace Config
 
 		out += "\r\n[OnFootFirstPerson]\r\n";
 		Append(out, "PedFpFov=%.6g\r\n",       s.pedFpFov);
+		Append(out, "PedFpOffsetX=%.6g\r\n",   s.pedFpOffsetX);
 		Append(out, "; Field of view while aiming in first person. 0 = leave alone.\r\n");
 		Append(out, "PedFpAimFov=%.6g\r\n",    s.pedFpAimFov);
 		Append(out, "; Unarmed reticle: 0 = do not touch, 1 = always show, 2 = never show.\r\n");
@@ -392,6 +398,7 @@ namespace Config
 		out += "\r\n[VehicleThirdPerson]\r\n";
 		Append(out, "VehTpFov=%.6g\r\n",       s.vehTpFov);
 		Append(out, "VehTpDistance=%.6g\r\n",  s.vehTpDistance);
+		Append(out, "VehTpPivotX=%.6g\r\n",    s.vehTpPivotX);
 		Append(out, "VehTpPivotScale=%.6g\r\n", s.vehTpPivotScale);
 		Append(out, "; Follow zoom is a native. 0 = leave the game alone, 1..3 = Near / Med / Far.\r\n");
 		Append(out, "VehTpZoom=%.6g\r\n",      s.vehTpZoom);
@@ -401,6 +408,7 @@ namespace Config
 
 		out += "\r\n[VehicleFirstPerson]\r\n";
 		Append(out, "VehFpFov=%.6g\r\n",       s.vehFpFov);
+		Append(out, "VehFpOffsetX=%.6g\r\n",   s.vehFpOffsetX);
 		Append(out, "VehFpOffsetZ=%.6g\r\n",   s.vehFpOffsetZ);
 		Append(out, "; The game forces the camera out of first person when the vehicle enters\r\n");
 		Append(out, "; deep water, and again when it is wrecked. These undo that for the\r\n");
@@ -581,7 +589,7 @@ namespace Config
 			s.weaponFovThrown, s.weaponFovMelee, s.weaponFovDigiscan, s.weaponFovJerry,
 			s.weaponFovSniper, s.weaponFovSniperLow,
 			s.weaponFovScopeOther, s.parachuteFov, s.parachuteDistance,
-			s.vehAimFov, 0.0f
+			s.vehAimFov, s.vehFpOffsetX
 		};
 		for (size_t i = 0; i < sizeof(floats) / sizeof(floats[0]); i++)
 			WriteFloatLE(buf, floats[i]);
@@ -679,6 +687,7 @@ namespace Config
 			s.parachuteFov        = ClampF(ReadFloatLE(p + 35 * 4), 0.0f, 110.0f, def.parachuteFov);
 			s.parachuteDistance   = ClampF(ReadFloatLE(p + 36 * 4), 0.0f, 4.0f,   def.parachuteDistance);
 			s.vehAimFov           = ClampF(ReadFloatLE(p + 37 * 4), 0.0f, 110.0f, def.vehAimFov);
+			s.vehFpOffsetX        = ClampF(ReadFloatLE(p + 38 * 4), -0.5f, 0.5f,  def.vehFpOffsetX);
 		}
 		else
 		{
@@ -686,6 +695,7 @@ namespace Config
 			s.parachuteFov        = def.parachuteFov;
 			s.parachuteDistance   = def.parachuteDistance;
 			s.vehAimFov           = def.vehAimFov;
+			s.vehFpOffsetX        = def.vehFpOffsetX;
 		}
 		return true;
 	}

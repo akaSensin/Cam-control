@@ -145,6 +145,7 @@ namespace
 		int vehTpDistance;
 		int vehTpPivotScale;
 		int vehFpFov;
+		int vehFpOffsetX;
 		int vehFpOffsetZ;
 		int modelThirdHash;
 		int modelFirstHash;
@@ -168,7 +169,7 @@ namespace
 		36,             // on foot, first person (BaseFov)
 		48, 360, 248, 827, // on foot, aiming (last one = useWeaponFovSetting flag)
 		48, 360, 188,   // vehicle, third person
-		84, 104,        // vehicle, first person (mounted)
+		84, 96, 104,    // vehicle, first person (mounted: BaseFov, OffsetX, OffsetZ)
 		1232, 1244,     // CVehicleModelInfo camera hashes
 		556, 102,       // first person extras: AimFov (0x22C), ShouldDisplayReticule (0x66)
 		552, 84, 88     // first person MaxFov (0x228), MinPitch (0x54), MaxPitch (0x58)
@@ -794,36 +795,26 @@ namespace
 		}
 	}
 
-	void RestoreAiming()
+	void RestoreAiming(bool weaponsOwnsDefault)
 	{
 		void *aimMeta = FindMetadata(HASH_PED_AIM);
 		if (VerifyMeta(aimMeta, HASH_PED_AIM))
 		{
 			const int flagOff = ResolveWeaponFovFlagOffsetFor(aimMeta, HASH_PED_AIM);
 			const uintptr_t m = (uintptr_t)aimMeta;
-			RestoreField(m + LAYOUT.pedAimFov);
+			if (!weaponsOwnsDefault)
+			{
+				RestoreField(m + LAYOUT.pedAimFov);
+				RestoreField(m + flagOff);
+			}
 			RestoreField(m + LAYOUT.pedAimDistance);
 			RestoreField(m + LAYOUT.pedAimPivotX);
-			RestoreField(m + flagOff);
-		}
-		for (int i = 0; i < (int)(sizeof(kWeaponCams) / sizeof(kWeaponCams[0])); i++)
-		{
-			const WeaponCam &w = kWeaponCams[i];
-			void *meta = FindMetadata(w.hash);
-			if (VerifyMeta(meta, w.hash))
-			{
-				RestoreField((uintptr_t)meta + w.offFov);
-				if (w.clearWeaponFovFlag)
-				{
-					const int flagOff = ResolveWeaponFovFlagOffsetFor(meta, w.hash);
-					RestoreField((uintptr_t)meta + flagOff);
-				}
-			}
 		}
 	}
 
 	struct FpsOffsets
 	{
+		int attachOffsetX;
 		int minPitch;
 		int maxPitch;
 		int reticule;
@@ -836,7 +827,7 @@ namespace
 		static bool resolved = false;
 		static FpsOffsets off =
 		{
-			LAYOUT.fpsMinPitch, LAYOUT.fpsMaxPitch, LAYOUT.fpsReticule,
+			0x40, LAYOUT.fpsMinPitch, LAYOUT.fpsMaxPitch, LAYOUT.fpsReticule,
 			LAYOUT.fpsMaxFov, LAYOUT.fpsAimFov
 		};
 		if (resolved || !meta)
@@ -845,7 +836,7 @@ namespace
 		const unsigned char *m = (const unsigned char *)meta;
 		if (!IsBadReadPtr(m, 0x2C0))
 		{
-			// 1. MinPitch (-60) / MaxPitch (60) + ShouldDisplayReticule (+0x12)
+			// 1. MinPitch (-60) / MaxPitch (60) + ShouldDisplayReticule (+0x12) + AttachRelativeOffset.x (-0x14)
 			for (int o = 0x48; o <= 0x70; o += 4)
 			{
 				const float f0 = AsFloat(*(const unsigned int *)(m + o));
@@ -854,6 +845,13 @@ namespace
 				{
 					off.minPitch = o;
 					off.maxPitch = o + 4;
+					if (o >= 0x14)
+					{
+						const float ay = AsFloat(*(const unsigned int *)(m + o - 0x10));
+						const float az = AsFloat(*(const unsigned int *)(m + o - 0x0C));
+						if (fabsf(ay - 0.05f) < 0.01f && fabsf(az - 0.05f) < 0.01f)
+							off.attachOffsetX = o - 0x14;
+					}
 					// 4 consecutive bools sit at o + 0x10..o + 0x13: {0, 1, *, 1}
 					if (m[o + 0x10] <= 1 && m[o + 0x11] <= 1 && m[o + 0x12] <= 1 && m[o + 0x13] <= 1)
 						off.reticule = o + 0x12;
@@ -879,8 +877,8 @@ namespace
 				}
 			}
 
-			Log::Line("metadata: fps offsets resolved - minPitch=+0x%X maxPitch=+0x%X reticle=+0x%X maxFov=+0x%X aimFov=+0x%X",
-				off.minPitch, off.maxPitch, off.reticule, off.maxFov, off.aimFov);
+			Log::Line("metadata: fps offsets resolved - attachX=+0x%X minPitch=+0x%X maxPitch=+0x%X reticle=+0x%X maxFov=+0x%X aimFov=+0x%X",
+				off.attachOffsetX, off.minPitch, off.maxPitch, off.reticule, off.maxFov, off.aimFov);
 			resolved = true;
 		}
 		return off;
@@ -899,6 +897,10 @@ namespace
 		const uintptr_t m = (uintptr_t)meta;
 		g_currentMetaBase = (unsigned char *)meta;
 
+		const float wantAimFov = (s.pedFpAimFov > 0.0f)
+			? s.pedFpAimFov
+			: (s.metaAiming && s.pedFpFov > 0.0f ? s.pedFpFov : 0.0f);
+
 		// Write the slider's upper FOV bound too so the game's Pause Menu
 		// first-person FOV slider cannot clamp or override pedFpFov.
 		if (s.pedFpFov > 0.0f)
@@ -906,9 +908,15 @@ namespace
 		else
 			RestoreField(m + off.maxFov);
 
-		// An FOV is never below 1 or above 180, so anything else in this field
-		// means the layout moved.
-		RestoreField(m + off.aimFov);
+		if (wantAimFov > 0.0f)
+			WriteFloatChecked(m + off.aimFov, wantAimFov, 1.0f, 180.0f, "first person aim fov");
+		else
+			RestoreField(m + off.aimFov);
+
+		if (s.pedFpOffsetX != 0.0f)
+			WriteFloatChecked(m + off.attachOffsetX, s.pedFpOffsetX, -2.0f, 2.0f, "first person offset x");
+		else
+			RestoreField(m + off.attachOffsetX);
 
 		// Also mirror to the alternate first-person shooter metadata
 		// referenced by camGameplayDirectorMetadata.
@@ -927,7 +935,15 @@ namespace
 				RestoreField(am + LAYOUT.pedFpFov);
 				RestoreField(am + off.maxFov);
 			}
-			RestoreField(am + off.aimFov);
+			if (wantAimFov > 0.0f)
+				WriteFloatChecked(am + off.aimFov, wantAimFov, 1.0f, 180.0f, "first person alt aim fov");
+			else
+				RestoreField(am + off.aimFov);
+
+			if (s.pedFpOffsetX != 0.0f)
+				WriteFloatChecked(am + off.attachOffsetX, s.pedFpOffsetX, -2.0f, 2.0f, "first person alt offset x");
+			else
+				RestoreField(am + off.attachOffsetX);
 		}
 
 		if (s.pedFpReticle == 1)
@@ -948,6 +964,143 @@ namespace
 			WriteFloatChecked(m + off.minPitch, -s.pedFpTiltDown, -90.0f, -1.0f, "first person min pitch");
 		else
 			RestoreField(m + off.minPitch);
+	}
+
+	int ResolveFollowPedPivotXOffset()
+	{
+		static bool resolved = false;
+		static int offPivotX = LAYOUT.pedTpPivotX;
+		if (resolved)
+			return offPivotX;
+
+		void *meta = FindMetadata(HASH_PED_THIRD);
+		if (!VerifyMeta(meta, HASH_PED_THIRD))
+			return offPivotX;
+
+		const unsigned char *m = (const unsigned char *)meta;
+		if (!IsBadReadPtr(m, 0x200))
+		{
+			// PivotPosition: CameraRelativeSideOffset sits 16 bytes before
+			// {timeAfterAimingMin=2, Max=4, maxDist=8, blend=10}.
+			for (int o = 0xC0; o <= 0x1C0; o += 4)
+			{
+				const float f0 = AsFloat(*(const unsigned int *)(m + o));
+				const float f1 = AsFloat(*(const unsigned int *)(m + o + 4));
+				const float f2 = AsFloat(*(const unsigned int *)(m + o + 8));
+				const float f3 = AsFloat(*(const unsigned int *)(m + o + 12));
+				if (fabsf(f0 - 2.0f) < 0.01f && fabsf(f1 - 4.0f) < 0.01f &&
+					fabsf(f2 - 8.0f) < 0.01f && fabsf(f3 - 10.0f) < 0.01f &&
+					o >= 16)
+				{
+					offPivotX = o - 16;
+					Log::Line("metadata: follow pivotX resolved at +0x%X (%d)", offPivotX, offPivotX);
+					break;
+				}
+			}
+			resolved = true;
+		}
+		return offPivotX;
+	}
+
+	struct FollowPedPitchOffsets
+	{
+		int basePitch = -1;
+		int tightPitch = -1;
+		int viewModePitch[5] = { -1, -1, -1, -1, -1 };
+	};
+
+	FollowPedPitchOffsets ResolveFollowPedPitchOffsets(void *meta)
+	{
+		static bool resolved = false;
+		static FollowPedPitchOffsets off;
+		if (resolved || !meta)
+			return off;
+
+		const unsigned char *m = (const unsigned char *)meta;
+		if (!IsBadReadPtr(m, 0x580))
+		{
+			// RelativeOrbitHeadingLimits (-180, 180) + OrbitPitchLimits (-70, 45)
+			// immediately followed by BaseOrbitPitchOffset (-3) and BaseOrbitPitchOffsetInTightSpace (-8).
+			for (int o = 0x100; o <= 0x300; o += 4)
+			{
+				const float f0 = AsFloat(*(const unsigned int *)(m + o));
+				const float f1 = AsFloat(*(const unsigned int *)(m + o + 4));
+				const float f2 = AsFloat(*(const unsigned int *)(m + o + 8));
+				const float f3 = AsFloat(*(const unsigned int *)(m + o + 12));
+				if (fabsf(f0 - (-180.0f)) < 0.01f && fabsf(f1 - 180.0f) < 0.01f &&
+					fabsf(f2 - (-70.0f)) < 0.01f && fabsf(f3 - 45.0f) < 0.01f)
+				{
+					const float b = AsFloat(*(const unsigned int *)(m + o + 16));
+					const float t = AsFloat(*(const unsigned int *)(m + o + 20));
+					if (b >= -89.0f && b <= 89.0f) off.basePitch = o + 16;
+					if (t >= -89.0f && t <= 89.0f) off.tightPitch = o + 20;
+					break;
+				}
+			}
+
+			// CustomViewModeSettings (hash_05B0AD9D): 5 x 16-byte structs starting with
+			// {0.78, -0.55, -0.55, -9}, {0.85, -0.5, -0.02, -3}, ...
+			for (int o = 0x200; o <= 0x500; o += 4)
+			{
+				const float f0 = AsFloat(*(const unsigned int *)(m + o));
+				const float f1 = AsFloat(*(const unsigned int *)(m + o + 4));
+				const float f2 = AsFloat(*(const unsigned int *)(m + o + 8));
+				const float f3 = AsFloat(*(const unsigned int *)(m + o + 12));
+				const float f4 = AsFloat(*(const unsigned int *)(m + o + 16));
+				if (fabsf(f0 - 0.78f) < 0.01f && fabsf(f1 - (-0.55f)) < 0.01f &&
+					fabsf(f2 - (-0.55f)) < 0.01f && fabsf(f3 - (-9.0f)) < 0.01f &&
+					fabsf(f4 - 0.85f) < 0.01f)
+				{
+					for (int i = 0; i < 5; i++)
+						off.viewModePitch[i] = o + i * 16 + 12;
+					break;
+				}
+			}
+
+			Log::Line("metadata: follow-ped pitch offsets resolved - base=+0x%X tight=+0x%X viewMode0=+0x%X",
+				off.basePitch, off.tightPitch, off.viewModePitch[0]);
+			resolved = true;
+		}
+		return off;
+	}
+
+	void ApplyFollowPedDefaultPitch(const Settings &s)
+	{
+		static bool hadPitch = false;
+		if (!s.pedTpPitchOverride && !hadPitch)
+			return;
+		hadPitch = s.pedTpPitchOverride;
+
+		void *baseMeta = FindMetadata(HASH_PED_THIRD);
+		if (!VerifyMeta(baseMeta, HASH_PED_THIRD))
+			return;
+
+		const FollowPedPitchOffsets off = ResolveFollowPedPitchOffsets(baseMeta);
+		auto applyOne = [&](unsigned int hash)
+		{
+			void *meta = FindMetadata(hash);
+			if (!VerifyMeta(meta, hash))
+				return;
+			const uintptr_t m = (uintptr_t)meta;
+			g_currentMetaBase = (unsigned char *)meta;
+			auto writeOrRestore = [&](int offset)
+			{
+				if (offset < 0)
+					return;
+				if (s.pedTpPitchOverride)
+					WriteFloatChecked(m + offset, s.pedTpDefaultPitch, -89.0f, 89.0f, "on foot default pitch");
+				else
+					RestoreField(m + offset);
+			};
+			writeOrRestore(off.basePitch);
+			writeOrRestore(off.tightPitch);
+			for (int i = 0; i < 5; i++)
+				writeOrRestore(off.viewModePitch[i]);
+		};
+
+		applyOne(HASH_PED_THIRD);
+		for (int i = 0; i < (int)(sizeof(kFollowPedExtraCams) / sizeof(kFollowPedExtraCams[0])); i++)
+			applyOne(kFollowPedExtraCams[i]);
 	}
 
 	void ApplyExtraCameras(const Settings &s)
@@ -1645,6 +1798,16 @@ namespace CamMeta
 				p.offPivot = LAYOUT.vehFpOffsetZ; // reused as the view Z offset here
 				p.pivot = s.vehFpOffsetZ;
 				ApplyPlan(p);
+
+				void *meta = FindMetadata(hash);
+				if (VerifyMeta(meta, hash))
+				{
+					g_currentMetaBase = (unsigned char *)meta;
+					if (s.vehFpOffsetX != 0.0f)
+						WriteFloatChecked((uintptr_t)meta + LAYOUT.vehFpOffsetX, s.vehFpOffsetX, -20.0f, 20.0f, "vehicle, first person offset x");
+					else
+						RestoreField((uintptr_t)meta + LAYOUT.vehFpOffsetX);
+				}
 			}
 			else
 			{
@@ -1654,6 +1817,17 @@ namespace CamMeta
 				p.offPivot = LAYOUT.vehTpPivotScale;
 				p.pivot = s.vehTpPivotScale;
 				ApplyPlan(p);
+
+				const int pivotXOff = ResolveFollowPedPivotXOffset();
+				void *meta = FindMetadata(hash);
+				if (VerifyMeta(meta, hash))
+				{
+					g_currentMetaBase = (unsigned char *)meta;
+					if (s.vehTpPivotX != 0.0f)
+						WriteFloatChecked((uintptr_t)meta + pivotXOff, s.vehTpPivotX, -20.0f, 20.0f, "vehicle, third person pivot x");
+					else
+						RestoreField((uintptr_t)meta + pivotXOff);
+				}
 			}
 			return;
 		}
@@ -1665,16 +1839,22 @@ namespace CamMeta
 		{
 			ApplyPlan(PlainPlan(HASH_PED_FIRST, LAYOUT.pedFpFov, s.pedFpFov, "on foot, first person", true));
 			ApplyFirstPersonExtras(s);
+			ApplyWeaponFovs(s);
 			return;
 		}
 
 		const bool aimingNow = (CAM::IS_AIM_CAM_ACTIVE() != 0);
 
+		const int pedPivotXOff = ResolveFollowPedPivotXOffset();
+
 		WritePlan p = PlainPlan(HASH_PED_THIRD, LAYOUT.pedTpFov, s.pedTpFov, "on foot, third person", !aimingNow);
 		p.offDistance = LAYOUT.pedTpDistance;
 		p.distance = s.pedTpDistance;
-		p.offPivot = LAYOUT.pedTpPivotX;
-		p.pivot = s.pedTpPivotX;
+		if (s.pedTpPivotX != 0.0f)
+		{
+			p.offPivot = pedPivotXOff;
+			p.pivot = s.pedTpPivotX;
+		}
 		ApplyPlan(p);
 
 		// Mirror to the remaining camFollowPedCameraMetadata entries (sprint,
@@ -1689,12 +1869,27 @@ namespace CamMeta
 				ApplyPlan(ep);
 		}
 
+		if (s.pedTpPivotX == 0.0f)
+		{
+			void *baseMeta = FindMetadata(HASH_PED_THIRD);
+			if (VerifyMeta(baseMeta, HASH_PED_THIRD))
+				RestoreField((uintptr_t)baseMeta + pedPivotXOff);
+			for (int i = 0; i < (int)(sizeof(kFollowPedExtraCams) / sizeof(kFollowPedExtraCams[0])); i++)
+			{
+				void *em = FindMetadata(kFollowPedExtraCams[i]);
+				if (VerifyMeta(em, kFollowPedExtraCams[i]))
+					RestoreField((uintptr_t)em + pedPivotXOff);
+			}
+		}
+
+		ApplyFollowPedDefaultPitch(s);
+
 		// Aiming switches the game to a different camera with its own metadata, so
 		// the FOV would snap back to vanilla down the sights. Optional - when off,
 		// restore any previously written aiming fields so vanilla aiming resumes.
+		const bool weaponsOwnsDefault = (s.weaponFovDefault > 0.0f);
 		if (s.metaAiming)
 		{
-			const bool weaponsOwnsDefault = (s.weaponFovDefault > 0.0f);
 			WritePlan aim = PlainPlan(HASH_PED_AIM, LAYOUT.pedAimFov,
 				(s.pedAimFov > 0.0f) ? s.pedAimFov : s.pedTpFov,
 				"on foot, aiming", aimingNow);
@@ -1709,15 +1904,15 @@ namespace CamMeta
 			aim.offFlag = ResolveWeaponFovFlagOffset();
 			aim.flag = false;
 			ApplyPlan(aim);
-
-			// The game switches to a different camera per weapon class while
-			// aiming, so each of those carries its own FOV to set.
-			ApplyWeaponFovs(s);
 		}
 		else
 		{
-			RestoreAiming();
+			RestoreAiming(weaponsOwnsDefault);
 		}
+
+		// The game switches to a different camera per weapon class while aiming,
+		// so each of those carries its own FOV to set regardless of metaAiming.
+		ApplyWeaponFovs(s);
 	}
 
 	// Read once per tick by the caller and shown in game, then cleared.

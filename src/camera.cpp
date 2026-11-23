@@ -249,11 +249,16 @@ namespace CameraControl
 		}
 
 		// Worked out before the view mode is applied: while the vehicle is in
-		// water or wrecked/undriveable, a change of view mode is the game's doing
-		// and must not be mistaken for the player pressing V.
+		// deep water or wrecked/undriveable, a change of view mode is the game's
+		// doing and must not be mistaken for the player pressing V. Boats are
+		// excluded from the water check so V still works on water.
 		const bool wrecked = inVeh && (ENTITY::IS_ENTITY_DEAD(veh) || !VEHICLE::IS_VEHICLE_DRIVEABLE(veh, FALSE));
+		const bool inDeepWater = inVeh &&
+			!VEHICLE::IS_THIS_MODEL_A_BOAT(ENTITY::GET_ENTITY_MODEL(veh)) &&
+			ENTITY::IS_ENTITY_IN_WATER(veh) &&
+			ENTITY::GET_ENTITY_SUBMERGED_LEVEL(veh) > 0.35f;
 		const bool hazard = inVeh &&
-			((s.vehFpNoSwapInWater && ENTITY::IS_ENTITY_IN_WATER(veh)) ||
+			((s.vehFpNoSwapInWater && inDeepWater) ||
 			 (s.vehFpNoSwapOnDestroyed && wrecked));
 
 		// ---- POV (only the camera we are actually using) -----------------
@@ -274,7 +279,7 @@ namespace CameraControl
 
 			if (!hazard)
 				g_wantVehView = cur;                                  // player is in charge
-			else if (g_wantVehView == 4 && cur != 4)
+			else if ((g_wantVehView == 4 || s.vehViewMode == VIEWMODE_FIRST) && cur != 4)
 				CAM::SET_FOLLOW_VEHICLE_CAM_VIEW_MODE(4);              // undo the game's switch
 		}
 		else
@@ -287,6 +292,21 @@ namespace CameraControl
 			: (CAM::GET_FOLLOW_PED_CAM_VIEW_MODE() == 4);
 
 		const bool inCutscene = (CUTSCENE::IS_CUTSCENE_ACTIVE() != 0);
+
+		// ---- unarmed reticle in on-foot first person ---------------------
+		// Metadata ShouldDisplayReticule alone does not force the HUD reticle
+		// to draw when unarmed, so drive HUD_RETICLE (14) directly here too.
+		if (!inVeh && firstPerson && !inCutscene && s.pedFpReticle != 0)
+		{
+			const Hash weapon = WEAPON::GET_SELECTED_PED_WEAPON(ped);
+			if (weapon == 0xA2719263u) // WEAPON_UNARMED
+			{
+				if (s.pedFpReticle == 1)
+					UI::SHOW_HUD_COMPONENT_THIS_FRAME(14);
+				else if (s.pedFpReticle == 2)
+					UI::HIDE_HUD_COMPONENT_THIS_FRAME(14);
+			}
+		}
 
 		// ---- camera shake ------------------------------------------------
 		// GTA applies its own shake values after the script tick, so merely

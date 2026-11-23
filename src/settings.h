@@ -76,7 +76,6 @@ struct Settings
 	// --- ui ---
 	bool autoSave = true;                 // save the ini whenever a value changes
 	bool debugOverlay = false;            // small info panel
-	bool checkUpdates = true;             // check GitHub Releases on launch
 	int  language = 0;                    // Lang::Id - see lang.h
 	int themePreset = THEME_MONOCHROME;   // accent colour preset
 	int themeR = 255;                     // custom accent, 0..255
@@ -96,6 +95,8 @@ struct Settings
 	float pedTpFov = 50.0f;        // camera metadata "fov"
 	float pedTpDistance = 1.075f;  // camera metadata "followDistance"
 	float pedTpPivotX = 0.0f;      // camera metadata "pivotOffsetX"
+	bool  pedTpPitchOverride = false; // override BaseOrbitPitchOffset on foot
+	float pedTpDefaultPitch = 0.0f;   // target resting pitch (-45..45 deg)
 
 	// While aiming the game switches to a different camera, and these three
 	// tune THAT one. 0 = "same as third person", which is what the mod did
@@ -122,12 +123,14 @@ struct Settings
 	// On foot - first person
 	// -----------------------------------------------------------------------
 	float pedFpFov = 50.0f;        // camera metadata "fov" (FPS metadata)
+	float pedFpOffsetX = 0.0f;     // camera metadata "AttachRelativeOffset.x"
 
 	// -----------------------------------------------------------------------
 	// Vehicle - third person
 	// -----------------------------------------------------------------------
 	float vehTpFov = 50.0f;
 	float vehTpDistance = 1.075f;
+	float vehTpPivotX = 0.0f;      // camera metadata "CameraRelativeSideOffset"
 	float vehTpPivotScale = 1.0f;
 	float vehTpZoom = 0.0f;        // native follow zoom, 0 = leave the game alone
 
@@ -135,6 +138,7 @@ struct Settings
 	// Vehicle - first person
 	// -----------------------------------------------------------------------
 	float vehFpFov = 50.0f;
+	float vehFpOffsetX = 0.0f;     // camera metadata "viewOffsetX"
 	float vehFpOffsetZ = 0.0f;     // camera metadata "viewOffsetZ"
 
 	// --- dev: live metadata probe -----------------------------------------
